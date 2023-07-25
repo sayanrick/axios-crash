@@ -1,1 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <form onSubmit="saveToLocalStorage(event)">
+        <label> Name</label>
+        <input type="text" name="username" id="usernameInputTag" required/>
+        <label> EmailId</label>
+        <input type="email" name="emailId" id="emailIdInputTag" required/>
+        <label> Phone Number</label>
+        <input type="tel" name="phonenumber" id="phonenumberInputTag" required/>
+        <input type="hidden" id="editUserId">
+        <button type="submit" id="submitButton">Submit</button>
+    </form>
+    <ul id="listOfitems">
+        <!-- List items will be added dynamically here -->
+    </ul>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script>
+        function saveToLocalStorage(event) {
+            event.preventDefault();
+            const name = event.target.username.value;
+            const email = event.target.emailId.value;
+            const phonenumber = event.target.phonenumber.value;
+            const editId = document.getElementById('editUserId').value;
 
+            const obj = {
+                name,
+                email,
+                phonenumber
+            };
+
+            if (editId) {
+                // If editId exists, update the existing user data
+                axios.put(`https://crudcrud.com/api/455d7eacb14e4ecbb04371ebeb081b20/appointmentData/${editId}`, obj)
+                .then(() => {
+                    updateUserDataOnScreen(editId, obj);
+                })
+                .catch((err) => {
+                    console.log(err);
+                });
+            } else {
+                // If editId is not present, create a new user
+                axios.post("https://crudcrud.com/api/455d7eacb14e4ecbb04371ebeb081b20/appointmentData", obj)
+                .then((res) => {
+                    obj.id = res.data._id;
+                    showUserOnScreen(obj);
+                })
+                .catch((err) => {
+                    console.log(err);
+                });
+            }
+
+            // Clear the form fields after submission or update
+            event.target.username.value = '';
+            event.target.emailId.value = '';
+            event.target.phonenumber.value = '';
+            document.getElementById('editUserId').value = '';
+            document.getElementById('submitButton').innerText = 'Submit';
+        }
+
+        function fetchDataFromServer() {
+            axios.get("https://crudcrud.com/api/455d7eacb14e4ecbb04371ebeb081b20/appointmentData")
+            .then((res) => {
+                const userList = res.data;
+                userList.forEach((user) => {
+                    showUserOnScreen(user);
+                });
+            })
+            .catch((err) => {
+                console.log(err);
+            });
+        }
+
+        function showUserOnScreen(obj) {
+            const parentElement = document.getElementById('listOfitems');
+            const childElement = document.createElement('li');
+            childElement.textContent = obj.name + ' - ' + obj.email + ' - ' + obj.phonenumber;
+            childElement.id = obj._id;
+
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Delete';
+            deleteButton.onclick = () => {
+                // Send DELETE request to the server using the stored ID
+                axios.delete(`https://crudcrud.com/api/455d7eacb14e4ecbb04371ebeb081b20/appointmentData/${obj._id}`)
+                .then(() => {
+                    parentElement.removeChild(childElement);
+                })
+                .catch((err) => {
+                    console.log(err);
+                });
+            };
+
+            const editButton = document.createElement('button');
+            editButton.textContent = 'Edit';
+            editButton.onclick = () => {
+                document.getElementById('usernameInputTag').value = obj.name;
+                document.getElementById('emailIdInputTag').value = obj.email;
+                document.getElementById('phonenumberInputTag').value = obj.phonenumber;
+                document.getElementById('editUserId').value = obj._id;
+                document.getElementById('submitButton').innerText = 'Update';
+            };
+
+            childElement.appendChild(deleteButton);
+            childElement.appendChild(editButton);
+            parentElement.appendChild(childElement);
+        }
+
+        function updateUserDataOnScreen(userId, updatedData) {
+            const userElement = document.getElementById(userId);
+            if (userElement) {
+                userElement.textContent = updatedData.name + ' - ' + updatedData.email + ' - ' + updatedData.phonenumber;
+            }
+        }
+
+        window.addEventListener("DOMContentLoaded", () => {
+            fetchDataFromServer();
+        });
+    </script>
+</body>
+</html>
