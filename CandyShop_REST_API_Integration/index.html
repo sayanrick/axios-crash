@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <form onSubmit="addItem(event)">
+        <label> Candy Name</label>
+        <input type="text" name="candyname" id="candyNameInputTag" required/>
+        <label> Description</label>
+        <input type="text" name="description" id="descriptionInputTag" required/>
+        <label> Price</label>
+        <input type="number" name="price" id="priceInputTag" required/>
+        <label> Quantity</label>
+        <input type="number" name="quantity" id="quantityInputTag" required/>
+        <button type="submit" id="submitButton">Add Item</button>
+    </form>
+    <ul id="listOfitems">
+        <!-- List items will be added dynamically here -->
+    </ul>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script>
+        function addItem(event) {
+            event.preventDefault();
+            const candyName = event.target.candyname.value;
+            const description = event.target.description.value;
+            const price = parseFloat(event.target.price.value);
+            const quantity = parseInt(event.target.quantity.value);
+
+            const item = {
+                candyName,
+                description,
+                price,
+                quantity
+            };
+
+            // Add the new item to the server
+            axios.post("https://crudcrud.com/api/455d7eacb14e4ecbb04371ebeb081b20/candyData", item)
+                .then((res) => {
+                    item._id = res.data._id;
+                    showItemOnScreen(item);
+                })
+                .catch((err) => {
+                    console.log(err);
+                });
+
+            // Clear the form fields after submission
+            event.target.candyname.value = '';
+            event.target.description.value = '';
+            event.target.price.value = '';
+            event.target.quantity.value = '';
+        }
+
+        function fetchDataFromServer() {
+            axios.get("https://crudcrud.com/api/455d7eacb14e4ecbb04371ebeb081b20/candyData")
+                .then((res) => {
+                    const itemList = res.data;
+                    itemList.forEach((item) => {
+                        showItemOnScreen(item);
+                    });
+                })
+                .catch((err) => {
+                    console.log(err);
+                });
+        }
+
+        function showItemOnScreen(item) {
+            const parentElement = document.getElementById('listOfitems');
+            const childElement = document.createElement('li');
+            childElement.textContent = `${item.candyName} - ${item.description} - Price: $${item.price.toFixed(2)} - Quantity: ${item.quantity}`;
+            childElement.id = item._id;
+
+            const buyButton1 = document.createElement('button');
+            buyButton1.textContent = 'Buy1';
+            buyButton1.onclick = () => {
+                updateQuantityOnServer(item._id, item.quantity - 1);
+            };
+
+            const buyButton2 = document.createElement('button');
+            buyButton2.textContent = 'Buy2';
+            buyButton2.onclick = () => {
+                updateQuantityOnServer(item._id, item.quantity - 2);
+            };
+
+            const buyButton3 = document.createElement('button');
+            buyButton3.textContent = 'Buy3';
+            buyButton3.onclick = () => {
+                updateQuantityOnServer(item._id, item.quantity - 3);
+            };
+
+            childElement.appendChild(buyButton1);
+            childElement.appendChild(buyButton2);
+            childElement.appendChild(buyButton3);
+            parentElement.appendChild(childElement);
+        }
+
+        function updateQuantityOnServer(itemId, updatedQuantity) {
+            axios.put(`https://crudcrud.com/api/455d7eacb14e4ecbb04371ebeb081b20/candyData/${itemId}`, { quantity: updatedQuantity })
+                .then(() => {
+                    updateQuantityOnScreen(itemId, updatedQuantity);
+                })
+                .catch((err) => {
+                    console.log(err);
+                });
+        }
+
+        function updateQuantityOnScreen(itemId, updatedQuantity) {
+            const itemElement = document.getElementById(itemId);
+            if (itemElement) {
+                itemElement.textContent = itemElement.textContent.replace(/Quantity: \d+/, `Quantity: ${updatedQuantity}`);
+
+                // Remove existing buy buttons and re-add them after update
+                const buyButtons = itemElement.querySelectorAll('button');
+                buyButtons.forEach(button => {
+                    button.remove();
+                });
+
+                const buyButton1 = document.createElement('button');
+                buyButton1.textContent = 'Buy1';
+                buyButton1.onclick = () => {
+                    updateQuantityOnServer(itemId, updatedQuantity - 1);
+                };
+
+                const buyButton2 = document.createElement('button');
+                buyButton2.textContent = 'Buy2';
+                buyButton2.onclick = () => {
+                    updateQuantityOnServer(itemId, updatedQuantity - 2);
+                };
+
+                const buyButton3 = document.createElement('button');
+                buyButton3.textContent = 'Buy3';
+                buyButton3.onclick = () => {
+                    updateQuantityOnServer(itemId, updatedQuantity - 3);
+                };
+
+                itemElement.appendChild(buyButton1);
+                itemElement.appendChild(buyButton2);
+                itemElement.appendChild(buyButton3);
+            }
+        }
+
+        window.addEventListener("DOMContentLoaded", () => {
+            fetchDataFromServer();
+        });
+    </script>
+</body>
+</html>
